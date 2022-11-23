@@ -30,7 +30,7 @@ public class Mp3Player {
 				}
 			}
 		}
-		catch (FileNotFoundException e) {
+		catch (FileNotFoundException e) { 
 			System.err.println("File " + file + " not found");
 		}
 		catch (PlayerException e) {

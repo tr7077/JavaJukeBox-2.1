@@ -9,26 +9,28 @@ public class ArgumentsChecker {
 		this.args = args;
 	}
 		
-	public boolean checkArgs() {
+	public void checkArgs() {
 		if(args.length != 1 && args.length != 2) {
-			return false;
+			System.err.println("You must enter 1 or 2 arguments only.");
+			System.exit(1);
 		}
 		isMp3 = args[0].matches(".+\\.(mp3)$");
 		
 		if(!args[0].matches(".+\\.(mp3|m3u)$")) {
-			return false;
+			System.err.println("Argument 1 must be .mp3 or .m3u file.");
+			System.exit(1);
 		}
 		
 		if(args.length == 2) {
 			if(!(args[1].equals("loop")||args[1].equals("random")||args[1].equals("order"))) {
-				return false;
+				System.err.println("Argument 2 must be loop, random or order.");
+				System.exit(1);
 			}
 			if(isMp3 && (args[1].equals("random") || args[1].equals("order"))) {
-				return false;
+				System.err.println(".mp3 file only playable with loop or without 2nd argument.");
+				System.exit(1);
 			}
 		}
-
-		return true;
 	}
 	
 	public boolean isMp3() {

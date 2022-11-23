@@ -8,10 +8,8 @@ public class MainPlayer {
 		
 		ArgumentsChecker checker = new ArgumentsChecker(args);
 		
-		if(!checker.checkArgs()) {
-			throw new IllegalArgumentException("Invalid arguments!");
-		}
-	
+		checker.checkArgs();
+
 		if(checker.isMp3()) {
 			Mp3Player player = new Mp3Player();
 			
@@ -23,11 +21,14 @@ public class MainPlayer {
 			player.close();
 		}
 		else {
+			M3uManager pplayer = new M3uManager();
 			
 			if(args.length == 1)
-				new M3uManager(args[0]);
+				pplayer.startPlaylist(args[0]);
 			else
-				new M3uManager(args[0], args[1]);
+				pplayer.startPlaylist(args[0], args[1]);
+			
+			pplayer.close();
 		}
 	}
 
