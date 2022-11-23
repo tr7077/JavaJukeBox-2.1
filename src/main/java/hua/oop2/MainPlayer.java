@@ -30,6 +30,8 @@ public class MainPlayer {
 			
 			pplayer.close();
 		}
+		
+		System.out.println("GoodBye!");
 	}
 
 }
