@@ -6,8 +6,6 @@ public class MainPlayer {
 		
 		ArgumentsChecker checker = new ArgumentsChecker(args);
 		
-		
-		
 		checker.checkArgs();
 
 		if(checker.isMp3()) {
