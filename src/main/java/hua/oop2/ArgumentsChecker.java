@@ -1,5 +1,9 @@
 package hua.oop2;
 
+/**
+ * @author teo&manos
+ * @Description This class was created for validation of cmd line arguments
+ */
 public class ArgumentsChecker {
 	
 	private String[] args;
@@ -8,7 +12,11 @@ public class ArgumentsChecker {
 	ArgumentsChecker(String[] args){
 		this.args = args;
 	}
-		
+	
+	 /**
+	  * @Description checks the format of args's elements and the number of them
+	  * @return void
+	  */
 	public void checkArgs() {
 		if(args.length != 1 && args.length != 2) {
 			System.err.println("You must enter 1 - 2 arguments.");
@@ -33,6 +41,9 @@ public class ArgumentsChecker {
 		}
 	}
 	
+	 /**
+	  * @return true if args[0] is .mp3 and false otherwise
+	  */
 	public boolean isMp3() {
 		return isMp3;
 	}

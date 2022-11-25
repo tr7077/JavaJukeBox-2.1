@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 
+/**
+ * @author teo&manos
+ * @Description This class was created for handling and playing .m3u playlists which contain songs .mp3, under a specific method-strategy
+ */
 public class M3uManager {
 	
 	//private static final String plsPattern = ".+\\.(pls)$";
@@ -18,6 +22,13 @@ public class M3uManager {
 	public void startPlaylist(String file) {
 		startPlaylist(file, "order");
 	}
+	/**
+	 * @Description takes an .m3u file, and according to the method reads it and plays the songs with the help of Mp3Player class.
+	 *  If a FileNotFoundException or a IOException is catched then it prints out an appropriate message
+	 * @param file
+	 * @param method
+	 * @return void
+	 */
 	public void startPlaylist(String file, String method) {
 		
 		try {
@@ -31,6 +42,10 @@ public class M3uManager {
 			String line;
 			BufferedReader reader;
 			ArrayList<String> shuffledSongs = new ArrayList<String>();
+			
+			// if method == loop then the .m3u will be played in loop
+			// if method == order code in do while will be executed only once
+			// if method == random code in do while will be executed only once and paths will be saved in an arraylist, shuffled and then played
 			do {
 				reader = new BufferedReader(new FileReader(file));
 				while((line = reader.readLine()) != null) {
@@ -67,10 +82,19 @@ public class M3uManager {
 		}
 	}
 	
+	/**
+	 * @Description closes the Mp3Player object when called
+	 * @return void
+	 */
 	public void close() {
 		player.close();
 	}
 	
+	/**
+	 * @Description takes a string that contains info about the path of a .mp3 file and returns the path fixed
+	 * @param line
+	 * @return String
+	 */
 	private String fixPath(String line) {
 		String[] array = line.split(" - ");
 		if(array.length == 1) return array[0];
