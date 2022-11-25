@@ -20,42 +20,18 @@ public class M3uManager {
 	}
 	public void startPlaylist(String file, String method) {
 		
-		BufferedReader reader = null;
-		
-		ArrayList<String> shuffledSongs = null;
-		
 		try {
-			
-			String line = null;
-			
-			if(!method.equals("random")) {
 				
-				if(method.equals("loop")) {
-					System.out.println("M3uFile: Loop Mode.");
-				}else System.out.println("M3uFile: Order Mode.");
-				
-				do {
-					
-					reader = new BufferedReader(new FileReader(file));
-					while((line = reader.readLine()) != null) {
-						if(line.matches(mp3Pattern)) { // || line.matches(plsPattern)
-							
-							if(line.matches(httpPattern)) {
-								// TODO
-							}
-							else {
-								line = fixPath(line);
-								player.play(line);
-							}
-						}
-					}
-					reader.close();
-					
-				}while(method.equals("loop"));
-			}
-			// random: TODO:
-			else {
-				shuffledSongs = new ArrayList<String>();
+			System.out.print(file + ": ");
+			if(method.equals("loop")) {
+				System.out.println("Loop Mode.");
+			}else if(method.equals("random")) System.out.println("Random Mode.");
+			else System.out.println("Order Mode.");
+			
+			String line;
+			BufferedReader reader;
+			ArrayList<String> shuffledSongs = new ArrayList<String>();
+			do {
 				reader = new BufferedReader(new FileReader(file));
 				while((line = reader.readLine()) != null) {
 					if(line.matches(mp3Pattern)) { // || line.matches(plsPattern)
@@ -65,18 +41,23 @@ public class M3uManager {
 						}
 						else {
 							line = fixPath(line);
-							shuffledSongs.add(line);
+							if(method.equals("random")) {
+								shuffledSongs.add(line);
+							}
+							else player.play(line);
 						}
 					}
 				}
 				reader.close();
 				
+			}while(method.equals("loop"));
+			
+			if(method.equals("random")) {
 				Collections.shuffle(shuffledSongs);
 				for(String song: shuffledSongs) {
 					player.play(song);
 				}
 			}
-			
 		}
 		catch (FileNotFoundException e) {
 			System.err.println("File " + file + " not found.");

@@ -11,7 +11,7 @@ public class ArgumentsChecker {
 		
 	public void checkArgs() {
 		if(args.length != 1 && args.length != 2) {
-			System.err.println("You must enter 1 or 2 arguments only.");
+			System.err.println("You must enter 1 - 2 arguments.");
 			System.exit(1);
 		}
 		isMp3 = args[0].matches(".+\\.(mp3)$");

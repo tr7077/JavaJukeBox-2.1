@@ -10,25 +10,20 @@ import gr.hua.dit.oop2.musicplayer.PlayerFactory;
 public class Mp3Player {
 	
 	private static Player player = PlayerFactory.getPlayer();
-	private FileInputStream song;
 	
 	public void play(String file) {
 		play(file, null);
 	}
 	public void play(String file, String method) {
 		try {
-			song = new FileInputStream(file);
+			System.out.print(file + ": ");
 			if(method == null) {
-				System.out.println("Song: OneTime Mode.");
-				player.play(song);
-			}
-			else {
-				System.out.println("Song: Loop Mode.");
-				while(true) {
-					player.play(song);
-					song = new FileInputStream(file);
-				}
-			}
+				System.out.println("OneTime Mode.");
+			}else System.out.println("Loop Mode.");
+			
+			do {
+				player.play(new FileInputStream(file));
+			}while(method != null); //method == loop
 		}
 		catch (FileNotFoundException e) { 
 			System.err.println("File " + file + " not found");

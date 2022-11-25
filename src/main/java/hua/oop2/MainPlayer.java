@@ -1,10 +1,8 @@
 package hua.oop2;
 
-import java.io.IOException;
-
 public class MainPlayer {
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) {
 		
 		ArgumentsChecker checker = new ArgumentsChecker(args);
 		
@@ -21,17 +19,16 @@ public class MainPlayer {
 			player.close();
 		}
 		else {
-			M3uManager pplayer = new M3uManager();
+			M3uManager m3uPlayer = new M3uManager();
 			
 			if(args.length == 1)
-				pplayer.startPlaylist(args[0]);
+				m3uPlayer.startPlaylist(args[0]);
 			else
-				pplayer.startPlaylist(args[0], args[1]);
+				m3uPlayer.startPlaylist(args[0], args[1]);
 			
-			pplayer.close();
+			m3uPlayer.close();
 		}
 		
 		System.out.println("GoodBye!");
 	}
-
 }
