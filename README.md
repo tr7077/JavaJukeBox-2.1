@@ -43,18 +43,19 @@
 			      output: D:\Java_Eclipse\Maven\JavaJukeBox-2.0\src\main\resources\sample3s.mp3 
 
 		- public void close() method which closes the Mp3Player player object when called
+====================================================================================================================
 
 4.) HOW TO EXECUTE THE PROJECT :
 <br>
-	-  Make sure you have git and maven installed
+	-  Make sure you have maven installed
 <br>
 	-  open a terminal
 <br> 
-	-  execute this: git clone https://github.com/tr7077/JavaJukeBox-2.0.git
+	-  go inside the JavaJukeBox-2.0 folder after you unzip the project
 <br>
-	-  execute this: cd ./JavaJukeBox-2.0/target
+	-  execute this: mvn package
 <br>
-	-  execute this: java -jar .\JavaJukeBox-2.0-1.0-SNAPSHOT.jar <.mp3 or .m3u file> <[optional] "order","loop","random">
+	-  and then run by executing this: java -jar .\target\JavaJukeBox-2.0-1.0-SNAPSHOT.jar <.mp3 or .m3u file> <[optional] "order"|"loop"|"random">
 <br>
 
  	-  Warning: when .mp3 file is given, only loop or (no 2nd argument == just plays the song and terminates) is accepted
