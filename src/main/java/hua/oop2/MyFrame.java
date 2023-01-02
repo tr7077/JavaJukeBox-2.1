@@ -48,6 +48,7 @@ public class MyFrame extends JFrame implements ActionListener {
 	private String path;
 	private static Mp3Player player = new Mp3Player();
 	private ArrayList<String> absoluteMp3Paths;
+	private boolean firstPlay;
 
 	
 	public MyFrame() {
@@ -124,6 +125,8 @@ public class MyFrame extends JFrame implements ActionListener {
 		replay.setFocusable(false);
 		
 		strategy = "order";
+		firstPlay = true;
+		currentSong = 0;
 		
 		this.add(m3uButton);
 		this.add(dirButton);
@@ -171,6 +174,8 @@ public class MyFrame extends JFrame implements ActionListener {
 		else if(e.getSource() == dirButton) {
 			path = chooseDir();
 			absoluteMp3Paths = getMp3sAbsoluteFromDir(path);
+			firstPlay = true;
+			currentSong = 0;
 			ArrayList<String> mp3s = getMp3sNamesFromDir(path);
 			if(mp3s == null) return;
 			for(String song: mp3s) {
@@ -193,6 +198,7 @@ public class MyFrame extends JFrame implements ActionListener {
 						selectedSong.setText("Selected song: " + item);
 						songs.setCellRenderer(new CustomCellRenderer(currentSong));				
 						player.play(absoluteMp3Paths.get(currentSong));
+						firstPlay = false;
 					}
 				}
 			});
@@ -210,15 +216,22 @@ public class MyFrame extends JFrame implements ActionListener {
 			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
 			songs.setCellRenderer(new CustomCellRenderer(currentSong));
 			player.play(absoluteMp3Paths.get(currentSong));
+			firstPlay = false;
 		}
 		else if(e.getSource() == next) {
 			currentSong = (currentSong + 1) % absoluteMp3Paths.size();
 			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
 			songs.setCellRenderer(new CustomCellRenderer(currentSong));
 			player.play(absoluteMp3Paths.get(currentSong));
+			firstPlay = false;
 		}
 		else if(e.getSource() == play) {
-			player.play(null);
+			if(firstPlay) {
+				selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
+				player.play(absoluteMp3Paths.get(currentSong));
+				firstPlay = false;
+			}
+			else player.play(null);
 		}
 		else if(e.getSource() == pause) {
 			player.pause();
