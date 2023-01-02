@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import gr.hua.dit.oop2.musicplayer.Player;
 import gr.hua.dit.oop2.musicplayer.PlayerException;
 import gr.hua.dit.oop2.musicplayer.PlayerFactory;
+//import gr.hua.dit.oop2.musicplayer.PlayerListener;
 
 /**
  * @author teo&manos
@@ -15,38 +16,36 @@ public class Mp3Player {
 	
 	private static Player player = PlayerFactory.getPlayer();
 	
-	public void play(String file) {
-		play(file, null);
+	
+	public void play(String path) {
+		if(path == null && player.getStatus() == Player.Status.PAUSED) {
+			player.resume();
+			return;
+		}
+		else if(path == null) return;
+		
+		if(player.getStatus() == Player.Status.PLAYING || player.getStatus() == Player.Status.PAUSED) {
+			player.stop();
+		}
+		try {
+			player.startPlaying(new FileInputStream(path));
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (PlayerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	public void pause() {
+		if(player.getStatus() == Player.Status.PLAYING) {
+			player.pause();
+		}
+	}
+	public void replay(String path) {
+		play(path);
 	}
 	
-	/**
-	 * @Description Creates a player object from the external library gr.hua.dit.oop2.musicplayer,
-	 *  uses the player object to play the song according to the given method.
-	 *  If a FileNotFoundException or a PlayerException is catched then it prints out an appropriate message.
-	 * @param file
-	 * @param method
-	 * @return void
-	 */
-	public void play(String file, String method) {
-		try {
-			System.out.print(file + ": ");
-			if(method == null) {
-				System.out.println("OneTime Mode.");
-			}else System.out.println("Loop Mode.");
-			
-			
-			//if method = null then song will play once else it's a loop
-			do {
-				player.play(new FileInputStream(file));
-			}while(method != null); //method == loop
-		}
-		catch (FileNotFoundException e) { 
-			System.err.println("File " + file + " not found");
-		}
-		catch (PlayerException e) {
-			System.err.println("Something's wrong with the player: " + e.getMessage());
-		}
-	}
 	/**
 	 * @Description closes the player object when called
 	 * @return void

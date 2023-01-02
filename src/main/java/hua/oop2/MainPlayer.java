@@ -28,7 +28,7 @@ public class MainPlayer {
 //			
 //			m3uPlayer.close();
 //		}
-		
+		//Mp3Player player = new Mp3
 		MyFrame myframe = new MyFrame();
 		
 		System.out.println("GoodBye!");
