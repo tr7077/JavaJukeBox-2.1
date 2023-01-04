@@ -9,8 +9,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
@@ -48,6 +52,7 @@ public class MyFrame extends JFrame implements ActionListener {
 	private String path;
 	private static Mp3Player player = new Mp3Player();
 	private ArrayList<String> absoluteMp3Paths;
+	private ArrayList<String> mp3s;
 	private boolean firstPlay;
 
 	
@@ -170,13 +175,21 @@ public class MyFrame extends JFrame implements ActionListener {
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == m3uButton) {
 			path = chooseM3u();
+			if(path == null) return;
+			absoluteMp3Paths = getMp3sAbsoluteFromM3u(path);
+			firstPlay = true;
+			currentSong = 0;
+			mp3s = getMp3sNamesFromM3u(path);
 		}
 		else if(e.getSource() == dirButton) {
 			path = chooseDir();
+			if(path == null) return;
 			absoluteMp3Paths = getMp3sAbsoluteFromDir(path);
 			firstPlay = true;
 			currentSong = 0;
-			ArrayList<String> mp3s = getMp3sNamesFromDir(path);
+			mp3s = getMp3sNamesFromDir(path);
+		}
+		if(e.getSource() == m3uButton || e.getSource() == dirButton) {
 			if(mp3s == null) return;
 			for(String song: mp3s) {
 				System.out.println(song);
@@ -187,6 +200,9 @@ public class MyFrame extends JFrame implements ActionListener {
 				temp[i++] = s;
 			}
 			songs = new JList<>(temp);
+			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
+			songs.setCellRenderer(new CustomCellRenderer(currentSong));
+			player.pause();
 			songs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 			songs.addMouseListener(new MouseAdapter() {
 				@Override
@@ -207,8 +223,9 @@ public class MyFrame extends JFrame implements ActionListener {
 			songsPanel.add(songs);
 			songsPanel.revalidate();
 			songsPanel.repaint();
-			
 		}
+		
+		
 		if(absoluteMp3Paths == null) return;
 		if(absoluteMp3Paths.size() == 0) return;
 		if(e.getSource() == prev) {
@@ -252,6 +269,84 @@ public class MyFrame extends JFrame implements ActionListener {
 		
 	}
 	
+	private ArrayList<String> getMp3sNamesFromM3u(String m3u) {
+		if(m3u == null) return null;
+		
+		ArrayList<String> mp3s = new ArrayList<>();
+		String mp3Pattern = ".+\\.(mp3)$";
+		
+		try(BufferedReader reader = new BufferedReader(new FileReader(m3u))){
+			String line;
+			while((line = reader.readLine()) != null) {
+				if(line.matches("^#")) continue;
+				if(line.matches(mp3Pattern)) {
+					String[] temp = line.split(" - ");
+					if(temp.length == 1) {
+						mp3s.add(new File(line).getName().split(".mp3")[0]);
+						continue;
+					}
+					else if(temp.length == 2) mp3s.add(new File(temp[0], temp[1]).getName().split(".mp3")[0]);
+					else if(temp.length > 2) {
+						String songName = "";
+						for(int i=1; i<temp.length; i++) {
+							if(i == temp.length-1) {
+								songName += temp[i];
+							}else songName += (temp[i]+" - ");
+						}
+						mp3s.add(new File(temp[0], songName).getName().split(".mp3")[0]);
+					}
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return mp3s;
+	}
+
+	private ArrayList<String> getMp3sAbsoluteFromM3u(String m3u) {
+		if(m3u == null) return null;
+		
+		ArrayList<String> mp3s = new ArrayList<>();
+		String mp3Pattern = ".+\\.(mp3)$";
+		
+		try(BufferedReader reader = new BufferedReader(new FileReader(m3u))){
+			String line;
+			while((line = reader.readLine()) != null) {
+				if(line.matches("^#")) continue;
+				if(line.matches(mp3Pattern)) {
+					String[] temp = line.split(" - ");
+					if(temp.length == 1) {
+						mp3s.add(new File(line).getAbsolutePath());
+						continue;
+					}
+					else if(temp.length == 2) mp3s.add(new File(temp[0], temp[1]).getAbsolutePath());
+					else if(temp.length > 2) {
+						String songName = "";
+						for(int i=1; i<temp.length; i++) {
+							if(i == temp.length-1) {
+								songName += temp[i];
+							}else songName += (temp[i]+" - ");
+						}
+						mp3s.add(new File(temp[0], songName).getAbsolutePath());
+					}
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return mp3s;
+	}
+
 	private ArrayList<String> getMp3sAbsoluteFromDir(String dir) {
 		if(dir == null) return null;
 		
@@ -297,13 +392,13 @@ public class MyFrame extends JFrame implements ActionListener {
 		}
 
 		@Override
-		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
-				boolean cellHasFocus) {
+		public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
 			Component component;
 			if (index == this.index) {
 				component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 				component.setBackground(Color.yellow);
-			} else {
+			}
+			else {
 				component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 				component.setBackground(list.getBackground());
 			}
