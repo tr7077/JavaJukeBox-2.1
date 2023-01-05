@@ -30,8 +30,12 @@ import javax.swing.JRadioButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+import gr.hua.dit.oop2.musicplayer.Player;
+import gr.hua.dit.oop2.musicplayer.PlayerEvent;
+import gr.hua.dit.oop2.musicplayer.PlayerListener;
+
 @SuppressWarnings("serial")
-public class MyFrame extends JFrame implements ActionListener {
+public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 	
 	public static final int WIDTH = 1000;
 	public static final int HEIGHT = 800;
@@ -39,18 +43,16 @@ public class MyFrame extends JFrame implements ActionListener {
 	
 	private JButton m3uButton;
 	private JButton dirButton;
-	private JRadioButton orderButton;
-	private JRadioButton loopButton;
-	private JRadioButton randButton;
-	private ButtonGroup strategyGroup;
-	private JPanel strategyPanel;
+	private JButton orderButton;
+	private JButton loopButton;
+	private JButton randButton;
 	private JList<String> songs;
 	private JPanel songsPanel;
 	private JLabel selectedSong;
 	private JButton next, prev, play, pause, replay;
 	private int currentSong;
 	private String path;
-	private static Mp3Player player = new Mp3Player();
+	private Mp3Player player = new Mp3Player(this);
 	private ArrayList<String> absoluteMp3Paths;
 	private ArrayList<String> mp3s;
 	private boolean firstPlay;
@@ -79,25 +81,21 @@ public class MyFrame extends JFrame implements ActionListener {
 		m3uButton.addActionListener(this);
 		dirButton.addActionListener(this);
 		
-		orderButton = new JRadioButton("Order");
-		loopButton = new JRadioButton("Loop");
-		randButton = new JRadioButton("Random");
+		orderButton = new JButton("Order");
+		loopButton = new JButton("Loop");
+		randButton = new JButton("Random");
 		orderButton.addActionListener(this);
 		loopButton.addActionListener(this);
 		randButton.addActionListener(this);
-		
-		strategyGroup = new ButtonGroup();
-		strategyGroup.add(orderButton);
-		strategyGroup.add(loopButton);
-		strategyGroup.add(randButton);
-		
-		strategyPanel = new JPanel();
-		strategyPanel.add(orderButton);
-		strategyPanel.add(loopButton);
-		strategyPanel.add(randButton);
-		strategyPanel.setBounds(10, 500, 200, 40);
-		strategyPanel.setBackground(Color.gray);
-		strategyPanel.setForeground(Color.gray);
+		orderButton.setBounds(10, 450, 100, 45);
+		loopButton.setBounds(110, 450, 100, 45);
+		randButton.setBounds(210, 450, 100, 45);
+		orderButton.setFocusable(false);
+		loopButton.setFocusable(false);
+		randButton.setFocusable(false);
+		orderButton.setBackground(Color.cyan);
+		loopButton.setBackground(Color.gray);
+		randButton.setBackground(Color.gray);
 		
 		songsPanel = new JPanel();
 		songsPanel.setBounds(400, 10, 400, 300);
@@ -135,7 +133,6 @@ public class MyFrame extends JFrame implements ActionListener {
 		
 		this.add(m3uButton);
 		this.add(dirButton);
-		this.add(strategyPanel);
 		this.add(songsPanel);
 		this.add(selectedSong);
 		this.add(prev);
@@ -143,6 +140,9 @@ public class MyFrame extends JFrame implements ActionListener {
 		this.add(play);
 		this.add(pause);
 		this.add(replay);
+		this.add(orderButton);
+		this.add(loopButton);
+		this.add(randButton);
 		
 		this.getContentPane().setBackground(Color.gray);
 		this.setVisible(true);
@@ -173,6 +173,25 @@ public class MyFrame extends JFrame implements ActionListener {
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
+		if(e.getSource() == orderButton) {
+			strategy = "order";
+			orderButton.setBackground(Color.cyan);
+			loopButton.setBackground(Color.gray);
+			randButton.setBackground(Color.gray);
+		}
+		else if(e.getSource() == loopButton) {
+			strategy = "loop";
+			loopButton.setBackground(Color.cyan);
+			orderButton.setBackground(Color.gray);
+			randButton.setBackground(Color.gray);
+		}
+		else if(e.getSource() == randButton) {
+			strategy = "random";
+			randButton.setBackground(Color.cyan);
+			orderButton.setBackground(Color.gray);
+			loopButton.setBackground(Color.gray);
+		}
+		
 		if(e.getSource() == m3uButton) {
 			path = chooseM3u();
 			if(path == null) return;
@@ -256,17 +275,7 @@ public class MyFrame extends JFrame implements ActionListener {
 		else if(e.getSource() == replay) {
 			player.replay(absoluteMp3Paths.get(currentSong));
 		}
-		
-		if(e.getSource() == orderButton) {
-			strategy = "order";
-		}
-		else if(e.getSource() == loopButton) {
-			strategy = "loop";
-		}
-		else if(e.getSource() == randButton) {
-			strategy = "random";
-		}
-		
+
 	}
 	
 	private ArrayList<String> getMp3sNamesFromM3u(String m3u) {
@@ -280,20 +289,25 @@ public class MyFrame extends JFrame implements ActionListener {
 			while((line = reader.readLine()) != null) {
 				if(line.matches("^#")) continue;
 				if(line.matches(mp3Pattern)) {
-					String[] temp = line.split(" - ");
-					if(temp.length == 1) {
-						mp3s.add(new File(line).getName().split(".mp3")[0]);
+					File tempFile = new File(line);
+					if(tempFile.exists()) {
+						mp3s.add(tempFile.getName().split(".mp3")[0]);
 						continue;
 					}
-					else if(temp.length == 2) mp3s.add(new File(temp[0], temp[1]).getName().split(".mp3")[0]);
-					else if(temp.length > 2) {
+					String[] temp = line.split(" - ");
+					if(temp.length == 1) {
+						if(tempFile.exists()) mp3s.add(tempFile.getName().split(".mp3")[0]);
+						continue;
+					}
+					else if(temp.length >= 2) {
 						String songName = "";
 						for(int i=1; i<temp.length; i++) {
 							if(i == temp.length-1) {
 								songName += temp[i];
 							}else songName += (temp[i]+" - ");
 						}
-						mp3s.add(new File(temp[0], songName).getName().split(".mp3")[0]);
+						tempFile = new File(temp[0], songName);
+						if(tempFile.exists()) mp3s.add(songName.split(".mp3")[0]);
 					}
 				}
 			}
@@ -319,20 +333,25 @@ public class MyFrame extends JFrame implements ActionListener {
 			while((line = reader.readLine()) != null) {
 				if(line.matches("^#")) continue;
 				if(line.matches(mp3Pattern)) {
-					String[] temp = line.split(" - ");
-					if(temp.length == 1) {
-						mp3s.add(new File(line).getAbsolutePath());
+					File tempFile = new File(line);
+					if(tempFile.exists()) {
+						mp3s.add(line);
 						continue;
 					}
-					else if(temp.length == 2) mp3s.add(new File(temp[0], temp[1]).getAbsolutePath());
-					else if(temp.length > 2) {
+					String[] temp = line.split(" - ");
+					if(temp.length == 1) {
+						if(tempFile.exists()) mp3s.add(tempFile.getAbsolutePath());
+						continue;
+					}
+					else if(temp.length >= 2) {
 						String songName = "";
 						for(int i=1; i<temp.length; i++) {
 							if(i == temp.length-1) {
 								songName += temp[i];
 							}else songName += (temp[i]+" - ");
 						}
-						mp3s.add(new File(temp[0], songName).getAbsolutePath());
+						tempFile = new File(temp[0], songName);
+						if(tempFile.exists()) mp3s.add(tempFile.getAbsolutePath());
 					}
 				}
 			}
@@ -404,6 +423,29 @@ public class MyFrame extends JFrame implements ActionListener {
 			}
 			return component;
 		}
+	}
+
+	@Override
+	public void statusUpdated(PlayerEvent arg0) {
+//		//System.out.println(arg0.getStatus());
+//		if(arg0.getStatus() != Player.Status.PLAYING && arg0.getStatus() != Player.Status.PAUSED) {
+//			
+//			if(strategy == "order") {
+//				currentSong++;
+//				if(currentSong == absoluteMp3Paths.size()) return;
+//				selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
+//				songs.setCellRenderer(new CustomCellRenderer(currentSong));
+//				player.play(absoluteMp3Paths.get(currentSong));
+//				
+//			}
+//			else if(strategy == "loop") {
+//				player.replay(absoluteMp3Paths.get(currentSong));
+//			}
+//			else if(strategy == "random") {
+//				
+//			}
+//		}
+		
 	}
 
 	

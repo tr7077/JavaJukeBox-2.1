@@ -4,8 +4,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 import gr.hua.dit.oop2.musicplayer.Player;
+import gr.hua.dit.oop2.musicplayer.PlayerEvent;
 import gr.hua.dit.oop2.musicplayer.PlayerException;
 import gr.hua.dit.oop2.musicplayer.PlayerFactory;
+import gr.hua.dit.oop2.musicplayer.PlayerListener;
 //import gr.hua.dit.oop2.musicplayer.PlayerListener;
 
 /**
@@ -14,8 +16,11 @@ import gr.hua.dit.oop2.musicplayer.PlayerFactory;
  */
 public class Mp3Player {
 
-	private static Player player = PlayerFactory.getPlayer();
-	
+	public static final Player player = PlayerFactory.getPlayer();
+	public Mp3Player(){}
+	public Mp3Player(MyFrame myframe) {
+		player.addPlayerListener(myframe);
+	}
 
 	public void play(String path) {
 		
@@ -47,7 +52,6 @@ public class Mp3Player {
 	public void replay(String path) {
 		play(path);
 	}
-	
 	/**
 	 * @Description closes the player object when called
 	 * @return void
