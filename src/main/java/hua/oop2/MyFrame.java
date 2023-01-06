@@ -1,6 +1,7 @@
 package hua.oop2;
 
 
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
@@ -27,11 +28,15 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
+import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import gr.hua.dit.oop2.musicplayer.Player;
+import gr.hua.dit.oop2.musicplayer.Player.Status;
 import gr.hua.dit.oop2.musicplayer.PlayerEvent;
+import gr.hua.dit.oop2.musicplayer.PlayerException;
+import gr.hua.dit.oop2.musicplayer.PlayerFactory;
 import gr.hua.dit.oop2.musicplayer.PlayerListener;
 
 @SuppressWarnings("serial")
@@ -51,14 +56,19 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 	private JLabel selectedSong;
 	private JButton next, prev, play, pause, replay;
 	private int currentSong;
-	private String path;
-	private Mp3Player player = new Mp3Player(this);
-	private ArrayList<String> absoluteMp3Paths;
-	private ArrayList<String> mp3s;
+	private ArrayList<String> songPaths;
+	private ArrayList<String> songNames;
 	private boolean firstPlay;
+	private static final Player player = PlayerFactory.getPlayer();
+	private Status prevStatus;
+	private MyFileChooser fileChooser;
+	private boolean cancelled;
 
 	
 	public MyFrame() {
+		player.addPlayerListener(this);
+		prevStatus = null;
+		
 		this.setSize(WIDTH, HEIGHT);
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setTitle("JukeBox2.1");
@@ -99,6 +109,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		
 		songsPanel = new JPanel();
 		songsPanel.setBounds(400, 10, 400, 300);
+		songsPanel.setBackground(Color.cyan);
 		
 		selectedSong = new JLabel();
 		selectedSong.setBounds(400, 250, 500, 300);
@@ -130,6 +141,10 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		strategy = "order";
 		firstPlay = true;
 		currentSong = 0;
+		songPaths = new ArrayList<>();
+		songNames = new ArrayList<>();
+		fileChooser = new MyFileChooser(this);
+		cancelled = false;
 		
 		this.add(m3uButton);
 		this.add(dirButton);
@@ -148,29 +163,20 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		this.setVisible(true);
 	}
 	
-	private String chooseM3u() {
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-		fileChooser.setFileFilter(new FileNameExtensionFilter("M3U File", "m3u"));
-		int result = fileChooser.showOpenDialog(this);
-		if (result == JFileChooser.APPROVE_OPTION) {
-		    File selectedFile = fileChooser.getSelectedFile();
-		    return selectedFile.getAbsolutePath();
+	private void initListOfSongs(ArrayList<File> temp) {
+		if(temp == null) {
+			cancelled = true;
+			return;
 		}
-		return null;
-	}
-	private String chooseDir() {
-		JFileChooser fileChooser = new JFileChooser();
-		fileChooser.setCurrentDirectory(new File(System.getProperty("user.home")));
-		fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		int result = fileChooser.showOpenDialog(this);
-		if (result == JFileChooser.APPROVE_OPTION) {
-		    File selectedFile = fileChooser.getSelectedFile();
-		    return selectedFile.getAbsolutePath();
+		songPaths.clear(); songNames.clear();
+		for(File f: temp) {
+			songPaths.add(f.getAbsolutePath());
+			songNames.add(f.getName().split(".mp3")[0]);
 		}
-		return null;
+		firstPlay = true;
+		currentSong = 0;
+		newListSongs();
 	}
-
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if(e.getSource() == orderButton) {
@@ -193,214 +199,34 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		}
 		
 		if(e.getSource() == m3uButton) {
-			path = chooseM3u();
-			if(path == null) return;
-			absoluteMp3Paths = getMp3sAbsoluteFromM3u(path);
-			firstPlay = true;
-			currentSong = 0;
-			mp3s = getMp3sNamesFromM3u(path);
+			initListOfSongs(fileChooser.chooseM3u());
 		}
 		else if(e.getSource() == dirButton) {
-			path = chooseDir();
-			if(path == null) return;
-			absoluteMp3Paths = getMp3sAbsoluteFromDir(path);
-			firstPlay = true;
-			currentSong = 0;
-			mp3s = getMp3sNamesFromDir(path);
-		}
-		if(e.getSource() == m3uButton || e.getSource() == dirButton) {
-			if(mp3s == null) return;
-			for(String song: mp3s) {
-				System.out.println(song);
-			}
-			String[] temp = new String[mp3s.size()];
-			int i = 0;
-			for(String s: mp3s) {
-				temp[i++] = s;
-			}
-			songs = new JList<>(temp);
-			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
-			songs.setCellRenderer(new CustomCellRenderer(currentSong));
-			player.pause();
-			songs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-			songs.addMouseListener(new MouseAdapter() {
-				@Override
-				public void mouseClicked(MouseEvent e) {
-					if (e.getClickCount() == 1) {
-						int index = songs.locationToIndex(e.getPoint());
-						currentSong = index;
-						String item = songs.getModel().getElementAt(index);
-						selectedSong.setText("Selected song: " + item);
-						songs.setCellRenderer(new CustomCellRenderer(currentSong));				
-						player.play(absoluteMp3Paths.get(currentSong));
-						firstPlay = false;
-					}
-				}
-			});
-			songs.setBounds(400, 10, 400, 300);
-			songsPanel.removeAll();
-			songsPanel.add(songs);
-			songsPanel.revalidate();
-			songsPanel.repaint();
+			initListOfSongs(fileChooser.chooseDir());
 		}
 		
+		if(songPaths == null) return;
+		if(songPaths.size() == 0) return;
 		
-		if(absoluteMp3Paths == null) return;
-		if(absoluteMp3Paths.size() == 0) return;
 		if(e.getSource() == prev) {
-			currentSong = currentSong == 0 ? absoluteMp3Paths.size()-1 : currentSong-1;
-			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
-			songs.setCellRenderer(new CustomCellRenderer(currentSong));
-			player.play(absoluteMp3Paths.get(currentSong));
-			firstPlay = false;
+			currentSong = currentSong == 0 ? songPaths.size()-1 : currentSong-1;
+			play();
 		}
 		else if(e.getSource() == next) {
-			currentSong = (currentSong + 1) % absoluteMp3Paths.size();
-			selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
-			songs.setCellRenderer(new CustomCellRenderer(currentSong));
-			player.play(absoluteMp3Paths.get(currentSong));
-			firstPlay = false;
+			currentSong = (currentSong + 1) % songPaths.size();
+			play();
 		}
 		else if(e.getSource() == play) {
-			if(firstPlay) {
-				selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
-				player.play(absoluteMp3Paths.get(currentSong));
-				firstPlay = false;
-			}
-			else player.play(null);
+			if(firstPlay) play();
+			else player.resume();
 		}
 		else if(e.getSource() == pause) {
 			player.pause();
 		}
 		else if(e.getSource() == replay) {
-			player.replay(absoluteMp3Paths.get(currentSong));
+			play();
 		}
 
-	}
-	
-	private ArrayList<String> getMp3sNamesFromM3u(String m3u) {
-		if(m3u == null) return null;
-		
-		ArrayList<String> mp3s = new ArrayList<>();
-		String mp3Pattern = ".+\\.(mp3)$";
-		
-		try(BufferedReader reader = new BufferedReader(new FileReader(m3u))){
-			String line;
-			while((line = reader.readLine()) != null) {
-				if(line.matches("^#")) continue;
-				if(line.matches(mp3Pattern)) {
-					File tempFile = new File(line);
-					if(tempFile.exists()) {
-						mp3s.add(tempFile.getName().split(".mp3")[0]);
-						continue;
-					}
-					String[] temp = line.split(" - ");
-					if(temp.length == 1) {
-						if(tempFile.exists()) mp3s.add(tempFile.getName().split(".mp3")[0]);
-						continue;
-					}
-					else if(temp.length >= 2) {
-						String songName = "";
-						for(int i=1; i<temp.length; i++) {
-							if(i == temp.length-1) {
-								songName += temp[i];
-							}else songName += (temp[i]+" - ");
-						}
-						tempFile = new File(temp[0], songName);
-						if(tempFile.exists()) mp3s.add(songName.split(".mp3")[0]);
-					}
-				}
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return mp3s;
-	}
-
-	private ArrayList<String> getMp3sAbsoluteFromM3u(String m3u) {
-		if(m3u == null) return null;
-		
-		ArrayList<String> mp3s = new ArrayList<>();
-		String mp3Pattern = ".+\\.(mp3)$";
-		
-		try(BufferedReader reader = new BufferedReader(new FileReader(m3u))){
-			String line;
-			while((line = reader.readLine()) != null) {
-				if(line.matches("^#")) continue;
-				if(line.matches(mp3Pattern)) {
-					File tempFile = new File(line);
-					if(tempFile.exists()) {
-						mp3s.add(line);
-						continue;
-					}
-					String[] temp = line.split(" - ");
-					if(temp.length == 1) {
-						if(tempFile.exists()) mp3s.add(tempFile.getAbsolutePath());
-						continue;
-					}
-					else if(temp.length >= 2) {
-						String songName = "";
-						for(int i=1; i<temp.length; i++) {
-							if(i == temp.length-1) {
-								songName += temp[i];
-							}else songName += (temp[i]+" - ");
-						}
-						tempFile = new File(temp[0], songName);
-						if(tempFile.exists()) mp3s.add(tempFile.getAbsolutePath());
-					}
-				}
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return mp3s;
-	}
-
-	private ArrayList<String> getMp3sAbsoluteFromDir(String dir) {
-		if(dir == null) return null;
-		
-		ArrayList<String> mp3s = new ArrayList<>();
-		String mp3Pattern = ".+\\.(mp3)$";
-		
-		File directory = new File(dir);
-	    // Get all the files in the directory
-	    File[] files = directory.listFiles();
-	    // Iterate through the files and print their names
-	    for (File file : files) {
-	    	if(file.getAbsolutePath().matches(mp3Pattern)) {
-	    		mp3s.add(file.getAbsolutePath());
-	    	}
-	    }
-	 
-	    return mp3s;
-	}
-	private ArrayList<String> getMp3sNamesFromDir(String dir) {
-		if(dir == null) return null;
-		
-		ArrayList<String> mp3s = new ArrayList<>();
-		String mp3Pattern = ".+\\.(mp3)$";
-		
-		File directory = new File(dir);
-	    // Get all the files in the directory
-	    File[] files = directory.listFiles();
-	    // Iterate through the files and print their names
-	    for (File file : files) {
-	    	if(file.getAbsolutePath().matches(mp3Pattern)) {
-	    		mp3s.add(file.getName().split(".mp3")[0]);
-	    	}
-	    }
-	 
-	    return mp3s;
 	}
 	
 	private class CustomCellRenderer extends DefaultListCellRenderer {
@@ -419,7 +245,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 			}
 			else {
 				component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-				component.setBackground(list.getBackground());
+				component.setBackground(Color.gray);
 			}
 			return component;
 		}
@@ -427,26 +253,81 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 
 	@Override
 	public void statusUpdated(PlayerEvent arg0) {
-//		//System.out.println(arg0.getStatus());
-//		if(arg0.getStatus() != Player.Status.PLAYING && arg0.getStatus() != Player.Status.PAUSED) {
-//			
+		System.out.println("current: " + arg0.getStatus() + " prev: " + prevStatus);
+//		if(arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.PLAYING) {
+//			//System.out.println("Play next song");
 //			if(strategy == "order") {
 //				currentSong++;
-//				if(currentSong == absoluteMp3Paths.size()) return;
-//				selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
-//				songs.setCellRenderer(new CustomCellRenderer(currentSong));
-//				player.play(absoluteMp3Paths.get(currentSong));
-//				
+//				if(currentSong == songPaths.size()) return;
+//				play();
 //			}
 //			else if(strategy == "loop") {
-//				player.replay(absoluteMp3Paths.get(currentSong));
+//				System.out.println("loop playing");
+//				play();
 //			}
 //			else if(strategy == "random") {
 //				
 //			}
 //		}
-		
+		prevStatus = arg0.getStatus();
 	}
-
+	
+	private void play() {
+		selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
+		songs.setCellRenderer(new CustomCellRenderer(currentSong));
+		String pathSong = songPaths.get(currentSong);
+	
+		if(player.getStatus() == Player.Status.PLAYING || player.getStatus() == Player.Status.PAUSED) {
+			player.stop();
+		}
+		try {
+			player.startPlaying(new FileInputStream(pathSong));
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (PlayerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		firstPlay = false;
+	}
+	
+	private void newListSongs() {
+		if(cancelled) {
+			cancelled = false;
+			return;
+		}
+		if(songNames == null) return;
+		if(songNames.size() == 0) return;
+		for(String song: songNames) {
+			System.out.println(song);
+		}
+		String[] temp = new String[songNames.size()];
+		int i = 0;
+		for(String s: songNames) {
+			temp[i++] = s;
+		}
+		songs = new JList<>(temp);
+		songs.setFont(new Font("Cascadia Code", Font.BOLD, 14));
+		selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
+		songs.setCellRenderer(new CustomCellRenderer(currentSong));
+		player.pause();
+		songs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		songs.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 1) {
+					currentSong = songs.locationToIndex(e.getPoint());
+					play();
+				}
+			}
+		});
+		songs.setBounds(400, 10, 400, 300);
+		songsPanel.removeAll();
+		songsPanel.add(songs);
+		songsPanel.revalidate();
+		songsPanel.repaint();
+	}
 	
 }
