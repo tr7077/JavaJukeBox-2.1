@@ -1,7 +1,5 @@
 package hua.oop2;
 
-
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
@@ -9,28 +7,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Random;
 
-import javax.swing.ButtonGroup;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import gr.hua.dit.oop2.musicplayer.Player;
 import gr.hua.dit.oop2.musicplayer.Player.Status;
@@ -54,17 +43,17 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 	private JList<String> songs;
 	private JPanel songsPanel;
 	private JLabel selectedSong;
-	private JButton next, prev, play, pause, replay;
+	private JButton next, play, pause;
 	private int currentSong;
 	private ArrayList<String> songPaths;
 	private ArrayList<String> songNames;
+	private boolean[] songsPlayed;
 	private boolean firstPlay;
 	private static final Player player = PlayerFactory.getPlayer();
 	private Status prevStatus;
 	private MyFileChooser fileChooser;
 	private boolean cancelled;
 
-	
 	public MyFrame() {
 		player.addPlayerListener(this);
 		prevStatus = null;
@@ -117,26 +106,18 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		selectedSong.setForeground(Color.blue);
 		selectedSong.setBackground(Color.cyan);
 		
-		prev = new JButton("Previous");
 		next = new JButton("Next");
 		play = new JButton("Play");
 		pause = new JButton("Pause");
-		replay = new JButton("Replay");
-		prev.addActionListener(this);
 		next.addActionListener(this);
 		play.addActionListener(this);
 		pause.addActionListener(this);
-		replay.addActionListener(this);
-		prev.setBounds(400, 450, 100, 45);
-		next.setBounds(500, 450, 100, 45);
-		play.setBounds(600, 450, 100, 45);
-		pause.setBounds(700, 450, 100, 45);
-		replay.setBounds(800, 450, 100, 45);
-		prev.setFocusable(false);
+		next.setBounds(450, 450, 100, 45);
+		play.setBounds(550, 450, 100, 45);
+		pause.setBounds(650, 450, 100, 45);
 		next.setFocusable(false);
 		play.setFocusable(false);
 		pause.setFocusable(false);
-		replay.setFocusable(false);
 		
 		strategy = "order";
 		firstPlay = true;
@@ -150,11 +131,9 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		this.add(dirButton);
 		this.add(songsPanel);
 		this.add(selectedSong);
-		this.add(prev);
 		this.add(next);
 		this.add(play);
 		this.add(pause);
-		this.add(replay);
 		this.add(orderButton);
 		this.add(loopButton);
 		this.add(randButton);
@@ -173,6 +152,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 			songPaths.add(f.getAbsolutePath());
 			songNames.add(f.getName().split(".mp3")[0]);
 		}
+		songsPlayed = new boolean[songNames.size()];
 		firstPlay = true;
 		currentSong = 0;
 		newListSongs();
@@ -208,23 +188,26 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		if(songPaths == null) return;
 		if(songPaths.size() == 0) return;
 		
-		if(e.getSource() == prev) {
-			currentSong = currentSong == 0 ? songPaths.size()-1 : currentSong-1;
-			play();
-		}
-		else if(e.getSource() == next) {
-			currentSong = (currentSong + 1) % songPaths.size();
-			play();
+		if(e.getSource() == next) {
+			if(strategy == "order") {
+				currentSong = (currentSong + 1) % songPaths.size();
+				play();
+			}
+			else if(strategy == "loop") {
+				play();
+			}
+			else {
+				chooseRandomSong();
+				play();
+			}
 		}
 		else if(e.getSource() == play) {
 			if(firstPlay) play();
+			else if(player.getStatus() == Player.Status.IDLE) play();
 			else player.resume();
 		}
 		else if(e.getSource() == pause) {
 			player.pause();
-		}
-		else if(e.getSource() == replay) {
-			play();
 		}
 
 	}
@@ -254,21 +237,22 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 	@Override
 	public void statusUpdated(PlayerEvent arg0) {
 		System.out.println("current: " + arg0.getStatus() + " prev: " + prevStatus);
-//		if(arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.PLAYING) {
-//			//System.out.println("Play next song");
-//			if(strategy == "order") {
-//				currentSong++;
-//				if(currentSong == songPaths.size()) return;
-//				play();
-//			}
-//			else if(strategy == "loop") {
-//				System.out.println("loop playing");
-//				play();
-//			}
-//			else if(strategy == "random") {
-//				
-//			}
-//		}
+		if((arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.PLAYING) 
+				|| (arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.IDLE)) {
+			
+			System.out.println("Play next song");
+			if(strategy == "order") {
+				currentSong = (currentSong + 1) % songPaths.size();
+				play();
+			}
+			else if(strategy == "loop") {
+				play();
+			}
+			else if(strategy == "random") {
+				chooseRandomSong();
+				play();
+			}
+		}
 		prevStatus = arg0.getStatus();
 	}
 	
@@ -276,11 +260,12 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
 		songs.setCellRenderer(new CustomCellRenderer(currentSong));
 		String pathSong = songPaths.get(currentSong);
-	
+		
 		if(player.getStatus() == Player.Status.PLAYING || player.getStatus() == Player.Status.PAUSED) {
 			player.stop();
 		}
 		try {
+			songsPlayed[currentSong] = true;
 			player.startPlaying(new FileInputStream(pathSong));
 			
 		} catch (FileNotFoundException e) {
@@ -328,6 +313,27 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		songsPanel.add(songs);
 		songsPanel.revalidate();
 		songsPanel.repaint();
+	}
+	
+	private void chooseRandomSong() {
+		
+		boolean reset = true;
+		for(int i=0; i<songsPlayed.length; i++) {
+			if(!songsPlayed[i]) {
+				reset = false;
+				break;
+			}
+		}
+		if(reset) {
+			for(int i=0; i<songsPlayed.length; i++) {
+				songsPlayed[i] = false;
+			}
+		}
+		
+		while(true) {
+			currentSong = new Random().nextInt(songsPlayed.length);
+			if(!songsPlayed[currentSong]) break;
+		}
 	}
 	
 }
