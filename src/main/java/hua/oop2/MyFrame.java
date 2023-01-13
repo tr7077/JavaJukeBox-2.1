@@ -10,6 +10,7 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -27,9 +28,11 @@ import gr.hua.dit.oop2.musicplayer.PlayerEvent;
 import gr.hua.dit.oop2.musicplayer.PlayerException;
 import gr.hua.dit.oop2.musicplayer.PlayerFactory;
 import gr.hua.dit.oop2.musicplayer.PlayerListener;
+import gr.hua.dit.oop2.musicplayer.ProgressEvent;
+import gr.hua.dit.oop2.musicplayer.ProgressListener;
 
 @SuppressWarnings("serial")
-public class MyFrame extends JFrame implements ActionListener, PlayerListener {
+public class MyFrame extends JFrame implements ActionListener, PlayerListener, ProgressListener {
 	
 	public static final int WIDTH = 1000;
 	public static final int HEIGHT = 800;
@@ -42,7 +45,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 	private JButton randButton;
 	private JList<String> songs;
 	private JPanel songsPanel;
-	private JLabel selectedSong;
+	private JLabel selectedSong, statusLabel, durationLabel;
 	private JButton next, play, pause;
 	private int currentSong;
 	private ArrayList<String> songPaths;
@@ -56,6 +59,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 
 	public MyFrame() {
 		player.addPlayerListener(this);
+		player.addProgressListener(this);
 		prevStatus = null;
 		
 		this.setSize(WIDTH, HEIGHT);
@@ -97,14 +101,27 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		randButton.setBackground(Color.gray);
 		
 		songsPanel = new JPanel();
-		songsPanel.setBounds(400, 10, 400, 300);
-		songsPanel.setBackground(Color.cyan);
-		
+		songsPanel.setBounds(350, 10, 400, 300);
+		songsPanel.setBackground(Color.gray);
+	
 		selectedSong = new JLabel();
 		selectedSong.setBounds(400, 250, 500, 300);
 		selectedSong.setFont(new Font("Cascadia Code", Font.BOLD, 18));
 		selectedSong.setForeground(Color.blue);
 		selectedSong.setBackground(Color.cyan);
+		
+		statusLabel = new JLabel("Status: Waiting for music selection");
+		statusLabel.setBounds(10, 550, 500, 300);
+		statusLabel.setFont(new Font("Cascadia Code", Font.BOLD, 20));
+		statusLabel.setForeground(Color.blue);
+		statusLabel.setBackground(Color.cyan);
+		System.out.println("Status: Waiting for music selection");
+		
+		durationLabel = new JLabel("Duration: 0.0s");
+		durationLabel.setBounds(400, 270, 500, 100);
+		durationLabel.setFont(new Font("Cascadia Code", Font.BOLD, 18));
+		durationLabel.setForeground(Color.blue);
+		durationLabel.setBackground(Color.cyan);
 		
 		next = new JButton("Next");
 		play = new JButton("Play");
@@ -137,6 +154,8 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		this.add(orderButton);
 		this.add(loopButton);
 		this.add(randButton);
+		this.add(statusLabel);
+		this.add(durationLabel);
 		
 		this.getContentPane().setBackground(Color.gray);
 		this.setVisible(true);
@@ -147,6 +166,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 			cancelled = true;
 			return;
 		}
+		cancelled = false;
 		songPaths.clear(); songNames.clear();
 		for(File f: temp) {
 			songPaths.add(f.getAbsolutePath());
@@ -156,6 +176,8 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 		firstPlay = true;
 		currentSong = 0;
 		newListSongs();
+		statusLabel.setText("Status: Idle");
+		System.out.println("Status: Idle");
 	}
 	@Override
 	public void actionPerformed(ActionEvent e) {
@@ -236,11 +258,12 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 
 	@Override
 	public void statusUpdated(PlayerEvent arg0) {
-		System.out.println("current: " + arg0.getStatus() + " prev: " + prevStatus);
-		if((arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.PLAYING) 
-				|| (arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.IDLE)) {
+		
+		statusLabel.setText("Status: " + arg0.getStatus());
+		System.out.println("Status: " + arg0.getStatus());
+		
+		if((arg0.getStatus() == Player.Status.IDLE && prevStatus == Player.Status.PLAYING)) {
 			
-			System.out.println("Play next song");
 			if(strategy == "order") {
 				currentSong = (currentSong + 1) % songPaths.size();
 				play();
@@ -253,7 +276,12 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 				play();
 			}
 		}
-		prevStatus = arg0.getStatus();
+		prevStatus = player.getStatus();
+	}
+	@Override
+	public void progress(ProgressEvent arg0) {
+		float seconds = arg0.getMicroseconds() / 1000000f;
+		durationLabel.setText("Duration: " + Math.round(seconds*10)/10f + "s");
 	}
 	
 	private void play() {
@@ -283,22 +311,23 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 			cancelled = false;
 			return;
 		}
+		
 		if(songNames == null) return;
 		if(songNames.size() == 0) return;
-		for(String song: songNames) {
-			System.out.println(song);
-		}
+		
 		String[] temp = new String[songNames.size()];
 		int i = 0;
 		for(String s: songNames) {
 			temp[i++] = s;
 		}
+		
 		songs = new JList<>(temp);
 		songs.setFont(new Font("Cascadia Code", Font.BOLD, 14));
 		selectedSong.setText("Selected song: " + songs.getModel().getElementAt(currentSong));
 		songs.setCellRenderer(new CustomCellRenderer(currentSong));
 		player.pause();
 		songs.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		
 		songs.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -308,7 +337,8 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener {
 				}
 			}
 		});
-		songs.setBounds(400, 10, 400, 300);
+		
+		//songs.setBounds(400, 10, 400, 300);
 		songsPanel.removeAll();
 		songsPanel.add(songs);
 		songsPanel.revalidate();
