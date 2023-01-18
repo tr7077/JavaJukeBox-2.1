@@ -57,15 +57,6 @@ public class MyFileChooser {
 							mp3Files.add(tempFile);
 							continue;
 						}
-						String[] temp = line.split(" - ");
-						String songName = "";
-						for(int i=1; i<temp.length; i++) {
-							if(i == temp.length-1) {
-								songName += temp[i];
-							}else songName += (temp[i]+" - ");
-						}
-						tempFile = new File(temp[0], songName);
-						if(tempFile.exists()) mp3Files.add(tempFile);
 					}
 				}
 			} catch (FileNotFoundException e) {

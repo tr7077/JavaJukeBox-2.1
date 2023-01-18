@@ -10,7 +10,6 @@ import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -20,6 +19,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.ListSelectionModel;
 
 import gr.hua.dit.oop2.musicplayer.Player;
@@ -46,7 +46,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 	private JList<String> songs;
 	private JPanel songsPanel;
 	private JLabel selectedSong, statusLabel, durationLabel;
-	private JButton next, play, pause;
+	private JButton next, play, pause, stop;
 	private int currentSong;
 	private ArrayList<String> songPaths;
 	private ArrayList<String> songNames;
@@ -55,7 +55,6 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 	private static final Player player = PlayerFactory.getPlayer();
 	private Status prevStatus;
 	private MyFileChooser fileChooser;
-	private boolean cancelled;
 
 	public MyFrame() {
 		player.addPlayerListener(this);
@@ -126,15 +125,19 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 		next = new JButton("Next");
 		play = new JButton("Play");
 		pause = new JButton("Pause");
+		stop = new JButton("Stop");
 		next.addActionListener(this);
 		play.addActionListener(this);
 		pause.addActionListener(this);
+		stop.addActionListener(this);
 		next.setBounds(450, 450, 100, 45);
 		play.setBounds(550, 450, 100, 45);
 		pause.setBounds(650, 450, 100, 45);
+		stop.setBounds(750, 450, 100, 45);
 		next.setFocusable(false);
 		play.setFocusable(false);
 		pause.setFocusable(false);
+		stop.setFocusable(false);
 		
 		strategy = "order";
 		firstPlay = true;
@@ -142,7 +145,6 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 		songPaths = new ArrayList<>();
 		songNames = new ArrayList<>();
 		fileChooser = new MyFileChooser(this);
-		cancelled = false;
 		
 		this.add(m3uButton);
 		this.add(dirButton);
@@ -151,6 +153,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 		this.add(next);
 		this.add(play);
 		this.add(pause);
+		this.add(stop);
 		this.add(orderButton);
 		this.add(loopButton);
 		this.add(randButton);
@@ -162,11 +165,8 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 	}
 	
 	private void initListOfSongs(ArrayList<File> temp) {
-		if(temp == null) {
-			cancelled = true;
-			return;
-		}
-		cancelled = false;
+		if(temp == null) return;
+		
 		songPaths.clear(); songNames.clear();
 		for(File f: temp) {
 			songPaths.add(f.getAbsolutePath());
@@ -230,6 +230,9 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 		}
 		else if(e.getSource() == pause) {
 			player.pause();
+		}
+		else if(e.getSource() == stop) {
+			player.stop();
 		}
 
 	}
@@ -306,12 +309,7 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 		firstPlay = false;
 	}
 	
-	private void newListSongs() {
-		if(cancelled) {
-			cancelled = false;
-			return;
-		}
-		
+	private void newListSongs() {	
 		if(songNames == null) return;
 		if(songNames.size() == 0) return;
 		
@@ -337,10 +335,9 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 				}
 			}
 		});
-		
-		//songs.setBounds(400, 10, 400, 300);
+
 		songsPanel.removeAll();
-		songsPanel.add(songs);
+		songsPanel.add(new JScrollPane(songs));
 		songsPanel.revalidate();
 		songsPanel.repaint();
 	}
