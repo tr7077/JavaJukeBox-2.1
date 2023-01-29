@@ -252,17 +252,11 @@ public class MyFrame extends JFrame implements ActionListener, PlayerListener, P
 	}
 	
 	private void chooseNextSongBasedOnStrategyAndPlay(){
-		if(strategy == "order") {
+		if(strategy == "order") 
 			currentSong = (currentSong + 1) % songPaths.size();
-			play();
-		}
-		else if(strategy == "loop") {
-			play();
-		}
-		else if(strategy == "random") {
+		else if(strategy == "random")
 			chooseRandomSong();
-			play();
-		}
+		play();
 	}
 
 	@Override
